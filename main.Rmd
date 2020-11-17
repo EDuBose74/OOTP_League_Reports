@@ -10,11 +10,11 @@ rm(list=ls())
 league <- 'NBC'
 season <- 2022
 
-league_al_name <- 'SAL'
+league_al_name <- 'STL'
 league_nl_name <- 'JTL'
 
 opening_day <- '2022-04-12'
-curr_date <- '2022-07-25'
+curr_date <- '2022-08-09'
 
 #NBC ONLY
 tourney_start <- '2022-07-04'
@@ -121,8 +121,7 @@ home <- data$games.csv %>%
     runs_home = runs1,
     hits_home = hits1,
     errors_home = errors1,
-    date = as.Date(date)
-  ) %>%
+    date = as.Date(date)) %>%
   select(game_id, home_id, date, runs_home, hits_home, errors_home, innings)
 
 
@@ -132,8 +131,8 @@ away <- data$games.csv %>%
     away_id = away_team,
     runs_away = runs0,
     hits_away = hits0,
-    errors_away = errors0
-  ) %>%
+    errors_away = errors0,
+    date = as.Date(date)) %>%
   select(game_id, away_id, runs_away, hits_away, errors_away)
 
 games <- home %>%
@@ -148,10 +147,10 @@ games <- home %>%
     home_loss = case_when(runs_home < runs_away ~ 1, TRUE ~ 0),
     away_win = case_when(runs_home < runs_away ~ 1, TRUE ~ 0),
     away_loss = case_when(runs_home > runs_away ~ 1, TRUE ~ 0),
-    home_div_win = case_when(league.x == league.y & division.x == division.y & runs_home > runs_away ~ 1, TRUE ~ 0 ),
-    home_div_loss = case_when(league.x == league.y & division.x == division.y & runs_home < runs_away ~ 1, TRUE ~ 0 ),
-    away_div_win = case_when(league.x == league.y & division.x == division.y & runs_home < runs_away ~ 1, TRUE ~ 0 ),
-    away_div_loss = case_when(league.x == league.y & division.x == division.y & runs_home > runs_away ~ 1, TRUE ~ 0 ),
+    home_div_win = case_when(division.x == division.y & league.x == league.y & runs_home > runs_away ~ 1, TRUE ~ 0 ),
+    home_div_loss = case_when(division.x == division.y & league.x == league.y & runs_home < runs_away ~ 1, TRUE ~ 0 ),
+    away_div_win = case_when(division.x == division.y & league.x == league.y & runs_home < runs_away ~ 1, TRUE ~ 0 ),
+    away_div_loss = case_when(division.x == division.y & league.x == league.y & runs_home > runs_away ~ 1, TRUE ~ 0 ),
     home_conf_win = case_when(league.x == league.y & runs_home > runs_away ~ 1, TRUE ~ 0),
     home_conf_loss = case_when(league.x == league.y & runs_home < runs_away ~ 1, TRUE ~ 0),
     away_conf_win = case_when(league.x == league.y & runs_home < runs_away ~ 1, TRUE ~ 0),
@@ -276,6 +275,9 @@ sheet_write(league_standings, ss = act_sheet, sheet = 'League Standings Data')
 
 
 
+```
+```{r}
+View(data$games.csv)
 ```
 
 
