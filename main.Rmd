@@ -7,32 +7,37 @@ output: html_document
 
 ```{r setup, include=FALSE}
 rm(list=ls())
-league <- 'NBC'
-season <- 2022
-
-league_al_name <- 'STL'
-league_nl_name <- 'JTL'
-
-opening_day <- '2022-04-12'
-curr_date <- '2022-08-09'
-
-#NBC ONLY
-tourney_start <- '2022-07-04'
-tourney_end <- '2022-07-25'
-```
-
-```{r}
 library(tidyverse)
 library(googlesheets4)
 library(gargle)
 library(lubridate)
 options(gargle_oauth_cache = '.secrets')
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r}
+league <- 'MVP'
+season <- 2023
+curr_date <- '2023-09-18'
+league_al_name <- 'AL' 
+league_nl_name <- 'NL'
+
+# NBC Tournament only. This needs to be updated once annually
+tourney_start <- '2022-07-04'
+tourney_end <- '2022-07-25'
+
+```
+
+
+```{r}
+# Google Sheet filenames. References where the league will upload data
 sbc_sheet <- '16VpwbSKXdvtYmaj3_a2FWaGmwK6cs4CQ8Jz0SeBU0kE'
 pbc_sheet <- '1cnN2URqvyCyvowX0KZvQcnIk8ISP8wodsPhbzHRMVwY'
 nbc_sheet <- '1uvjxMS-w8-NwcT0r4uFc03p0JabwsN4z00j9pPheBKk'
 mvp_sheet <- '1B9f-kYwmbL-MQuINmtDaEhhRtZ8kNT0-ffTqs5SZnfU'
 vbc_sheet <- ''
 
+# Setting up a dictionary type equivalency for league ID. These should never change.
 leagues <- vector(mode ="list", length=5)
 names(leagues) <- c('SBC','PBC','NBC','MVP','VBC')
 leagues[['SBC']] <- 145
@@ -41,44 +46,61 @@ leagues[['NBC']] <- 153
 leagues[['MVP']] <- 153
 leagues[['VBC']] <- 152
 
+# Setting up a dictionary type equivalency for opening day. Only need to change the opening days.
+openday <- vector(mode ="list", length=5)
+names(openday) <- c('SBC','PBC','NBC','MVP','VBC')
+openday[['SBC']] <- '2037-03-29'
+openday[['PBC']] <- '2029-04-02'
+openday[['NBC']] <- '2022-04-12'
+openday[['MVP']] <- '2023-03-30'
+openday[['VBC']] <- '2028-04-03'
+
+# No need to update these case statements. They simply assign variables based on selection of league
+# that get used elsewhere. If a new league is needed to be added or changed, the filepath needs to be shifted.
+
 dir <- case_when(
-  league == 'SBC' ~ "~/Out of the Park Developments/OOTP Baseball 21/saved_games/SBC.lg/import_export/csv/",
-  league == 'NBC' ~ "~/Out of the Park Developments/OOTP Baseball 21/saved_games/NBC.lg/import_export/csv/",
-  league == 'MVP' ~ "~/Out of the Park Developments/OOTP Baseball 21/saved_games/MVP.lg/import_export/csv/",
-  league == 'PBC' ~ "~/Out of the Park Developments/OOTP Baseball 21/saved_games/PBC.lg/import_export/csv/",
-  league == 'VBC' ~ "~/Out of the Park Developments/OOTP Baseball 21/saved_games/VBC.lg/import_export/csv/"
-)
+league == 'SBC' ~ "~/Out of the Park Developments/OOTP Baseball 21/saved_games/SBC.lg/import_export/csv/",
+league == 'NBC' ~ "~/Out of the Park Developments/OOTP Baseball 21/saved_games/NBC.lg/import_export/csv/",
+league == 'MVP' ~ "~/Out of the Park Developments/OOTP Baseball 21/saved_games/MVP.lg/import_export/csv/",
+league == 'PBC' ~ "~/Out of the Park Developments/OOTP Baseball 21/saved_games/PBC.lg/import_export/csv/",
+league == 'VBC' ~ "~/Out of the Park Developments/OOTP Baseball 21/saved_games/VBC.lg/import_export/csv/")
 
 act_league <- case_when(
-  league == 'SBC' ~ leagues$SBC,
-  league == 'NBC' ~ leagues$NBC,
-  league == 'MVP' ~ leagues$MVP,
-  league == 'PBC' ~ leagues$PBC,
-  league == 'VBC' ~ leagues$VBC
+league == 'SBC' ~ leagues$SBC,
+league == 'NBC' ~ leagues$NBC,
+league == 'MVP' ~ leagues$MVP,
+league == 'PBC' ~ leagues$PBC,
+league == 'VBC' ~ leagues$VBC
 )
 
 act_sheet <- case_when(
-  league == 'SBC' ~ sbc_sheet,
-  league == 'NBC' ~ nbc_sheet,
-  league == 'MVP' ~ mvp_sheet,
-  league == 'PBC' ~ pbc_sheet,
-  league == 'VBC' ~ vbc_sheet
+league == 'SBC' ~ sbc_sheet,
+league == 'NBC' ~ nbc_sheet,
+league == 'MVP' ~ mvp_sheet,
+league == 'PBC' ~ pbc_sheet,
+league == 'VBC' ~ vbc_sheet
 )
-knitr::opts_chunk$set(echo = TRUE)
-```
 
+opening_day <- case_when(
+league == 'SBC' ~ openday$SBC,
+league == 'NBC' ~ openday$NBC,
+league == 'MVP' ~ openday$MVP,
+league == 'PBC' ~ openday$PBC,
+league == 'VBC' ~ openday$VBC
+)
 
-```{r}
+# Dataset import from the CSV files in the file directory based off of league selection. 
+
 files<-list.files(path = dir, pattern=".csv$")
 data<-list()
-for (i in 1:length(files))
-{
-data[[i]]<-read.csv(paste0(dir,files[i]))
-}
+for (i in 1:length(files)){
+data[[i]]<-read.csv(paste0(dir,files[i]))}
 names(data)<-files
 ```
 
 ```{r}
+# Creating the comp balance draft sheets for the leagues.
+
 playoffs <- data$team_history.csv %>%
   filter(year == season, league_id == act_league) %>%
   select(team_id, made_playoffs)
