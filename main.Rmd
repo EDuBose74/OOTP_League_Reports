@@ -16,15 +16,15 @@ knitr::opts_chunk$set(echo = TRUE)
 ```
 
 ```{r}
-league <- 'MVP'
-season <- 2023
-curr_date <- '2023-09-18'
+league <- 'SBC'
+season <- 2037
+curr_date <- '2037-08-03'
 league_al_name <- 'AL' 
 league_nl_name <- 'NL'
 
 # NBC Tournament only. This needs to be updated once annually
-tourney_start <- '2022-07-04'
-tourney_end <- '2022-07-25'
+tourney_start <- '2023-07-04'
+tourney_end <- '2023-07-24'
 
 ```
 
@@ -51,7 +51,7 @@ openday <- vector(mode ="list", length=5)
 names(openday) <- c('SBC','PBC','NBC','MVP','VBC')
 openday[['SBC']] <- '2037-03-29'
 openday[['PBC']] <- '2029-04-02'
-openday[['NBC']] <- '2022-04-12'
+openday[['NBC']] <- '2023-04-11'
 openday[['MVP']] <- '2023-03-30'
 openday[['VBC']] <- '2028-04-03'
 
