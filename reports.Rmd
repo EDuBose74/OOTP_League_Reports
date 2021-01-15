@@ -16,15 +16,15 @@ knitr::opts_chunk$set(echo = TRUE)
 ```
 
 ```{r}
-league <- 'MVP'
+league <- 'NBC'
 season <- 2023
-curr_date <- '2023-09-18'
+curr_date <- '2023-06-20'
 league_al_name <- 'AL' 
 league_nl_name <- 'NL'
 
 # NBC Tournament only. This needs to be updated once annually
-tourney_start <- '2022-07-04'
-tourney_end <- '2022-07-25'
+tourney_start <- '2023-07-04'
+tourney_end <- '2023-07-25'
 
 ```
 
