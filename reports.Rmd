@@ -7,6 +7,7 @@ output: html_document
 
 ```{r setup, include=FALSE}
 rm(list=ls())
+library(psycho)
 library(tidyverse)
 library(googlesheets4)
 library(gargle)
@@ -16,15 +17,15 @@ knitr::opts_chunk$set(echo = TRUE)
 ```
 
 ```{r}
-league <- 'MVP'
+league <- 'NBC'
 season <- 2023
-curr_date <- '2023-09-18'
+curr_date <- '2023-07-11'
 league_al_name <- 'AL' 
 league_nl_name <- 'NL'
 
 # NBC Tournament only. This needs to be updated once annually
-tourney_start <- '2022-07-04'
-tourney_end <- '2022-07-25'
+tourney_start <- '2023-07-04'
+tourney_end <- '2023-07-25'
 
 ```
 
@@ -51,7 +52,7 @@ openday <- vector(mode ="list", length=5)
 names(openday) <- c('SBC','PBC','NBC','MVP','VBC')
 openday[['SBC']] <- '2037-03-29'
 openday[['PBC']] <- '2029-04-02'
-openday[['NBC']] <- '2022-04-12'
+openday[['NBC']] <- '2023-04-11'
 openday[['MVP']] <- '2023-03-30'
 openday[['VBC']] <- '2028-04-03'
 
@@ -383,10 +384,115 @@ tourney_standings <- merge(home_tourney, away_tourney, all = TRUE) %>%
   group_by(team) %>%
   summarise_if(is.numeric, sum)
 
+game_ids <- games %>% 
+  filter(date < curr_date & date >= opening_day) %>%
+  select(game_id)
 
+tourney_game_ids <- tourney_games %>% 
+  filter(date < curr_date) %>%
+  select(game_id)
+
+season_batting <- game_ids %>%
+  left_join(data$players_game_batting.csv, by='game_id') %>%
+  select(game_id,ab, h, d, t, hr, bb, hp, sf) %>%
+  summarise_each(funs(sum)) %>%
+  mutate(lgavg = round((h/ab),3),
+       lgobp = round((h+bb+hp)/(ab+bb+hp+sf),3),
+       lgslg = round(((h-d-t-hr) + (d*2) + (t*3) + (hr*4))/(ab),3)) %>%
+  select(lgavg, lgobp, lgslg)
+
+
+season_pitching <- game_ids %>%
+  left_join(data$players_game_pitching_stats.csv, by='game_id') %>%
+  select(game_id, hra, bb, hp, k, ip, er) %>%
+  mutate(lghr = mean(hra),
+         lgbb = mean(bb),
+         lghbp = mean(hp),
+         lgk = mean(k),
+         lgip = mean(ip), 
+         lger = sum(er)) %>%
+  select(lghr, lgbb, lghbp, lgk, lgip, lger)
+
+league_era <- game_ids %>%
+  left_join(data$players_game_pitching_stats.csv, by='game_id') %>%
+  select(game_id, ip, er) %>%
+  summarise_each(funs(sum)) %>%
+  mutate(lgera = (9*er)/ip) %>%
+  select(lgera)
+
+lgavg <- season_batting$lgavg
+lgobp <- season_batting$lgobp
+lgslg <- season_batting$lgslg
+lghr <- round(mean(season_pitching$lghr),3)
+lgbb <- round(mean(season_pitching$lgbb),3)
+lghbp <- round(mean(season_pitching$lghbp),3)
+lgk <- round(mean(season_pitching$lgk),3)
+lgip <- round(mean(season_pitching$lgip),3)
+lgera <- round(league_era$lgera,3)
+fipc <- lgera - ((13*lghr)+(3*(lgbb+lghbp))-(2*lgk))/lgip
+
+tourney_batting <- tourney_game_ids %>%
+  left_join(data$players_game_batting.csv, by='game_id') %>%
+  select(player_id, team_id, ab, h, d, t, hr, bb, hp, sf, wpa) %>%
+  group_by(player_id, team_id) %>%
+  summarise_each(funs(sum)) %>%
+  left_join(select(data$teams, 'team_id', 'abbr'), by = 'team_id') %>%
+  left_join(select(data$players.csv, 'player_id','first_name','last_name'), by = 'player_id') %>%
+  mutate(avg = round((h/ab),3),
+       obp = round((h+bb+hp)/(ab+bb+hp+sf),3),
+       slg = round(((h-d-t-hr) + (d*2) + (t*3) + (hr*4))/(ab),3),
+       singles = h-d-t-hr,
+       doubles = d,
+       triples = t,
+       homeruns = hr,
+       xbh = (d+t+hr),
+       win_prob = round(wpa,3),
+       ops_plus = round(((obp/lgobp) + (slg/lgslg) -1) * 100,0),
+       player_name = paste(first_name, last_name, sep = " "),
+       team_name = abbr) %>%
+  ungroup() %>%
+  select(player_name, team_name, ab, avg, obp, slg, singles, doubles, triples, homeruns, xbh ,ops_plus, win_prob) %>%
+  filter(ab >= ((length(tourney_game_ids$game_id) / 12) +2))
+
+names(tourney_batting) <- toupper(names(tourney_batting))
+
+# tourney_pitching <- tourney_game_ids %>%
+#   left_join(data$players_game_pitching.csv, by='game_id') %>%
+#   select(player_id, team_id, position, ab, h, d, t, hr, bb, hp, sf, wpa) %>%
+#   group_by(player_id, team_id, position) %>%
+#   summarise_each(funs(sum)) %>%
+#   left_join(select(data$teams, 'team_id', 'name', 'nickname'), by = 'team_id') %>%
+#   left_join(select(data$players.csv, 'player_id','first_name','last_name'), by = 'player_id') %>%
+#   mutate(avg = round((h/ab),3),
+#        obp = round((h+bb+hp)/(ab+bb+hp+sf),3),
+#        slg = round(((h-d-t-hr) + (d*2) + (t*3) + (hr*4))/(ab),3),
+#        singles = h-d-t-hr,
+#        doubles = d,
+#        triples = t,
+#        homeruns = hr,
+#        xbh = (d+t+hr),
+#        win_prob_added = round(wpa,3),
+#        player_name = paste(first_name, last_name, sep = " "),
+#        team_name = paste(name, nickname, sep = " ")) %>%
+#   ungroup() %>%
+#   select(player_name, team_name, ab, avg, obp, slg, singles, doubles, triples, homeruns, xbh ,win_prob_added) %>%
+#   filter(ab >= min_ab)
 
 sheet_write(home_tourney, ss = act_sheet, sheet = 'Home Tourney Data')
 sheet_write(away_tourney, ss = act_sheet, sheet = 'Away Tourney Data')
 sheet_write(tourney_standings, ss = act_sheet, sheet = 'League Tourney Data')
+sheet_write(tourney_batting, ss = act_sheet, sheet = 'Tourney Batters')
 }
 ```
+
+```{r}
+
+pitchers <- data$players_game_pitching_stats.csv
+
+```
+
+```{r}
+pitchers$li_scaled <- scale(pitchers$li)
+view(pitchers)
+```
+
