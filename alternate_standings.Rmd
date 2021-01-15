@@ -18,7 +18,7 @@ knitr::opts_chunk$set(echo = TRUE)
 ```{r}
 league <- 'PBC'
 season <- 2029
-curr_date <- '2029-09-24'
+curr_date <- '2029-10-01'
 league_al_name <- 'AL' 
 league_nl_name <- 'NL'
 ```
